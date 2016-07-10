@@ -162,22 +162,37 @@
   //          No accumulator is given so the first element is used.
   _.reduce = function(collection, iterator, accumulator) {
     var sum,count;
-    if(collection.length === 0){
-      return collection;
-    }
+    if(Array.isArray(collection)){
+      if(collection.length === 0){
+        return collection;
+      }
 
-    if(accumulator === undefined){
-      sum = collection[0];
-      count = 1;
-    }
-    else{
-      sum = accumulator;
-      count = 0;
-    }
+      if(accumulator === undefined){
+        sum = collection[0];
+        count = 1;
+      }
+      else{
+        sum = accumulator;
+        count = 0;
+      }
 
-    while (count < collection.length){
-      sum = iterator(sum,collection[count]);
-      count++;
+      while (count < collection.length){
+        sum = iterator(sum,collection[count]);
+       count++;
+      }
+    }
+    else {
+      if(collection === {}){
+        return collection;
+      }
+
+      if(accumulator !== undefined){
+        sum = accumulator;
+      }
+      for(var key in collection){
+          sum = iterator(sum,collection[key])
+      }
+      
     }
     return sum;
 
@@ -198,12 +213,36 @@
 
   // Determine whether all of the elements match a truth test.
   _.every = function(collection, iterator) {
+    iterator = iterator || _.identity;//used to ensure a function if iterator is undefined
+    if(collection.length === 0){
+      return true;
+    }//used to ensure a return value if there is no collection
+
+    return _.reduce(collection,function(item,value){
+
+      if(item === false){
+        return false;
+      }
+      return !!(iterator(value))//used to make the value a boolean
+
+    },true);
     // TIP: Try re-using reduce() here.
   };
 
   // Determine whether any of the elements pass a truth test. If no iterator is
   // provided, provide a default one
   _.some = function(collection, iterator) {
+    var status = false;
+    iterator = iterator || _.identity;//used to ensure a function if iterator is undefined
+    if(collection.length === 0){
+      return false;
+    }//used to ensure a return value if there is no collection
+   _.each(collection,function(item){
+      if(iterator(item)){
+        status = true;
+      }
+    })
+    return status;
     // TIP: There's a very clever way to re-use every() here.
   };
 
@@ -227,11 +266,31 @@
   //     bla: "even more stuff"
   //   }); // obj1 now contains key1, key2, key3 and bla
   _.extend = function(obj) {
+    var result = obj;
+    for(var i = 1;i<arguments.length;i++){
+      var item = arguments[i];
+      for(var key in item){
+        var x = key + '';
+        obj[x] = item[key]; 
+      }
+    }
+    return result;
   };
 
   // Like extend, but doesn't ever overwrite a key that already
   // exists in obj
   _.defaults = function(obj) {
+    var result = obj;
+    for(var i = 1;i<arguments.length;i++){
+      var item = arguments[i];
+      for(var key in item){
+        var x = key + '';
+        if(obj[x] === undefined){
+        obj[x] = item[key]; 
+        }
+      }
+    }
+    return result;
   };
 
 
@@ -275,6 +334,24 @@
   // already computed the result for the given argument and return that value
   // instead if possible.
   _.memoize = function(func) {
+    var store = [];
+    
+    return function(){
+      var result;
+      var args = arguments;
+
+      
+      if(store[JSON.stringify(args)] !== undefined){
+        return store[JSON.stringify(args)];
+      }  
+      result = func.apply(this,args)
+      store[JSON.stringify(args)] = result;
+      return result;
+    };
+   
+
+
+
   };
 
   // Delays a function for the given number of milliseconds, and then calls
@@ -284,6 +361,11 @@
   // parameter. For example _.delay(someFunction, 500, 'a', 'b') will
   // call someFunction('a', 'b') after 500ms
   _.delay = function(func, wait) {
+    var args = Array.prototype.slice.call(arguments,2); 
+    setTimeout(function(){
+
+      return func.apply(this,args);
+    }, wait)
   };
 
 
@@ -298,6 +380,18 @@
   // input array. For a tip on how to make a copy of an array, see:
   // http://mdn.io/Array.prototype.slice
   _.shuffle = function(array) {
+    var index = array.length;
+    var value,random;
+    var arg = array.slice();
+    while(index !== 0){
+      random = Math.floor(Math.random() * index);
+      index--;
+      value = arg[index];
+      arg[index] =  arg[random];
+      arg[random] = value;
+
+    }
+    return arg;
   };
 
 
